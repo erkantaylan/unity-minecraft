@@ -18,18 +18,18 @@ public class World : MonoBehaviour
     private void Start()
     {
         GenerateWorld();
-        playerLastChunkCoordinate = GetChunkCoordFromVector3(player.transform.position);
+        playerLastChunkCoordinate = GetChunkCoordinates(player.transform.position);
     }
 
     private void Update()
     {
-        if (!GetChunkCoordFromVector3(player.transform.position).Equals(playerLastChunkCoordinate))
+        if (!GetChunkCoordinates(player.transform.position).Equals(playerLastChunkCoordinate))
         {
             CheckViewDistance();
         }
     }
 
-    private ChunkCoordinate GetChunkCoordFromVector3(Vector3 pos)
+    private static ChunkCoordinate GetChunkCoordinates(Vector3 pos)
     {
         int x = Mathf.FloorToInt(pos.x / VoxelData.ChunkWidth);
         int z = Mathf.FloorToInt(pos.z / VoxelData.ChunkWidth);
@@ -50,7 +50,10 @@ public class World : MonoBehaviour
             }
         }
 
-        spawn = new Vector3(VoxelData.WorldSizeInBlocks / 2, VoxelData.ChunkHeight + 2, VoxelData.WorldSizeInBlocks / 2);
+        int spawnX = VoxelData.WorldSizeInBlocks / 2;
+        int spawnY = VoxelData.ChunkHeight + 2;
+        int spawnZ = VoxelData.WorldSizeInBlocks / 2;
+        spawn = new Vector3(spawnX, spawnY, spawnZ);
         player.position = spawn;
     }
 
@@ -64,10 +67,10 @@ public class World : MonoBehaviour
 
         int fromX = chunkX - VoxelData.ViewDistanceInChunks / 2;
         int toX = chunkX + VoxelData.ViewDistanceInChunks / 2;
-        
+
         int fromZ = chunkZ - VoxelData.ViewDistanceInChunks / 2;
         int toZ = chunkZ + VoxelData.ViewDistanceInChunks / 2;
-        
+
         for (int x = fromX; x < toX; x++)
         {
             for (int z = fromZ; z < toZ; z++)
@@ -75,16 +78,17 @@ public class World : MonoBehaviour
                 // If the chunk is within the world bounds and it has not been created.
                 if (IsChunkInWorld(x, z))
                 {
-                    var thisChunk = new ChunkCoordinate(x, z);
+                    var chunkCoordinate = new ChunkCoordinate(x, z);
 
-                    if (chunks[x, z] == null)
+                    Chunk chunk = chunks[x, z];
+                    if (chunk == null)
                     {
-                        CreateChunk(thisChunk);
+                        CreateChunk(chunkCoordinate);
                     }
-                    else if (!chunks[x, z].IsActive)
+                    else if (!chunk.IsActive)
                     {
-                        chunks[x, z].IsActive = true;
-                        activeChunks.Add(thisChunk);
+                        chunk.IsActive = true;
+                        activeChunks.Add(chunkCoordinate);
                     }
 
                     // Check if this chunk was already in the active chunks list.
@@ -108,8 +112,8 @@ public class World : MonoBehaviour
 
     private static bool IsChunkInWorld(int x, int z)
     {
-        if (x > 0 && x < VoxelData.WorldSizeInChunks - 1 
-         && z > 0 && z < VoxelData.WorldSizeInChunks - 1)
+        if (x >= 0 && x < VoxelData.WorldSizeInChunks
+         && z >= 0 && z < VoxelData.WorldSizeInChunks)
         {
             return true;
         }
@@ -119,14 +123,15 @@ public class World : MonoBehaviour
 
     private void CreateChunk(ChunkCoordinate coordinate)
     {
-        chunks[coordinate.X, coordinate.Z] = new Chunk(new ChunkCoordinate(coordinate.X, coordinate.Z), this);
-        activeChunks.Add(new ChunkCoordinate(coordinate.X, coordinate.Z));
+        var chunkCoordinate = new ChunkCoordinate(coordinate.X, coordinate.Z);
+        chunks[coordinate.X, coordinate.Z] = new Chunk(chunkCoordinate, this);
+        activeChunks.Add(chunkCoordinate);
     }
 
     public static byte GetVoxelId(Vector3 pos)
     {
-        if (pos.x < 0 || pos.x > VoxelData.WorldSizeInBlocks - 1 
-         || pos.y < 0 || pos.y > VoxelData.ChunkHeight - 1 
+        if (pos.x < 0 || pos.x > VoxelData.WorldSizeInBlocks - 1
+         || pos.y < 0 || pos.y > VoxelData.ChunkHeight - 1
          || pos.z < 0 || pos.z > VoxelData.WorldSizeInBlocks - 1)
         {
             return 0;
