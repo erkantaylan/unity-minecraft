@@ -4,8 +4,8 @@ namespace Models
 {
     public class ChunkCoordinate : IEquatable<ChunkCoordinate>
     {
-        public int X;
-        public int Z;
+        public readonly int X;
+        public readonly int Z;
 
         public ChunkCoordinate(int x, int z)
         {
@@ -28,7 +28,6 @@ namespace Models
 
             return X == other.X && Z == other.Z;
         }
-
 
         /// <inheritdoc />
         public override bool Equals(object obj)

@@ -5,7 +5,6 @@ using UnityEngine;
 public class Chunk
 {
     private readonly GameObject chunkObject;
-
     private readonly MeshFilter meshFilter;
 
     private readonly MeshRenderer meshRenderer;
@@ -13,34 +12,33 @@ public class Chunk
     private readonly List<Vector2> uvs = new List<Vector2>();
     private readonly List<Vector3> vertices = new List<Vector3>();
 
-    private readonly byte[,,] voxelMap;
+    private readonly byte[,,] voxelMap = new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
     private readonly World world;
 
-    public ChunkCoordinate Coordinate;
+    public ChunkCoordinate ChunkCoordinate;
 
     private int vertexIndex;
 
-    public Chunk(World world, ChunkCoordinate coordinate)
+    public Chunk(ChunkCoordinate chunkCoordinate, World world)
     {
-        this.world = world;
-        Coordinate = coordinate;
+        ChunkCoordinate = chunkCoordinate;
         chunkObject = new GameObject();
-
         chunkObject.transform.position = new Vector3(
-            coordinate.X * VoxelData.ChunkWidth,
+            ChunkCoordinate.X * VoxelData.ChunkWidth,
             0f,
-            coordinate.Z * VoxelData.ChunkWidth);
+            ChunkCoordinate.Z * VoxelData.ChunkWidth);
 
-        meshFilter = chunkObject.AddComponent<MeshFilter>();
         meshRenderer = chunkObject.AddComponent<MeshRenderer>();
+        meshFilter = chunkObject.AddComponent<MeshFilter>();
+        this.world = world;
 
-        chunkObject.transform.SetParent(world.transform);
-        meshRenderer.material = world.material;
+        chunkObject.transform.SetParent(this.world.transform);
+        meshRenderer.material = this.world.material;
 
-        chunkObject.name = $"Chunk({coordinate.X}, {coordinate.Z})";
+        chunkObject.name = $"{ChunkCoordinate.X}, {ChunkCoordinate.Z}";
 
-        voxelMap = PopulateVoxelMap();
+        PopulateVoxelMap();
         CreateMeshData();
         CreateMesh();
     }
@@ -51,24 +49,28 @@ public class Chunk
         set => chunkObject.SetActive(value);
     }
 
-    public Vector3Int Position => Vector3Int.CeilToInt(chunkObject.transform.position);
+    private Vector3 Position => chunkObject.transform.position;
 
-
-    private byte[,,] PopulateVoxelMap()
+    private static bool IsVoxelInChunk(int x, int y, int z)
     {
-        var map = new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
+        return 
+            x >= 0 && x < VoxelData.ChunkWidth
+         && y >= 0 && y < VoxelData.ChunkHeight
+         && z >= 0 && z < VoxelData.ChunkWidth;
+    }
+
+    private void PopulateVoxelMap()
+    {
         for (var y = 0; y < VoxelData.ChunkHeight; y++)
         {
             for (var x = 0; x < VoxelData.ChunkWidth; x++)
             {
                 for (var z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    map[x, y, z] = World.GetVoxelId(new Vector3Int(x, y, z) + Position);
+                    voxelMap[x, y, z] = World.GetVoxelId(new Vector3(x, y, z) + Position);
                 }
             }
         }
-
-        return map;
     }
 
     private void CreateMeshData()
@@ -79,79 +81,66 @@ public class Chunk
             {
                 for (var z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    AddVoxelDataToChunk(new Vector3Int(x, y, z));
+                    AddVoxelDataToChunk(new Vector3(x, y, z));
                 }
             }
         }
     }
 
-    private bool CheckVoxel(Vector3Int position)
+    public byte GetVoxelFromMap(Vector3 pos)
     {
-        Debug.Log($"{nameof(position)}:{position}");
-        Debug.Log($"{nameof(Position)}:{Position}");
+        pos -= Position;
 
-        if (!IsVoxelInChunk(position.x, position.y, position.z))
+        return voxelMap[(int) pos.x, (int) pos.y, (int) pos.z];
+    }
+
+    private bool CheckVoxel(Vector3 pos)
+    {
+        int x = Mathf.FloorToInt(pos.x);
+        int y = Mathf.FloorToInt(pos.y);
+        int z = Mathf.FloorToInt(pos.z);
+
+        // If position is outside of this chunk...
+        if (!IsVoxelInChunk(x, y, z))
         {
-            return world.blockTypes[World.GetVoxelId(position + Position)].isSolid;
+            return world.blocktypes[World.GetVoxelId(pos + Position)].isSolid;
         }
 
-        return world.blockTypes[voxelMap[position.x, position.y, position.z]].isSolid;
+        return world.blocktypes[voxelMap[x, y, z]].isSolid;
     }
 
-    private static bool IsVoxelInChunk(int x, int y, int z)
+    private void AddVoxelDataToChunk(Vector3 pos)
     {
-        // return x >= 0 && x < VoxelData.ChunkWidth
-        //  && y >= 0 && y < VoxelData.ChunkHeight
-        //  && z >= 0 && z < VoxelData.ChunkWidth;
-
-        return x >= 0 && x < VoxelData.ChunkWidth
-            && y >= 0 && y < VoxelData.ChunkHeight
-            && z >= 0 && z < VoxelData.ChunkWidth;
-    }
-
-
-    private void AddVoxelDataToChunk(Vector3Int position)
-    {
-        int firstDimention = VoxelData.VoxelTriangles.GetLength(0);
-        int secondDimentin = VoxelData.VoxelTriangles.GetLength(1);
-        
-        for (var i = 0; i < firstDimention; i++)
+        for (var p = 0; p < 6; p++)
         {
-            Vector3Int faceCheck = position + VoxelData.FaceChecks[i];
-            
-            if (!CheckVoxel(faceCheck))
+            if (!CheckVoxel(pos + VoxelData.FaceChecks[p]))
             {
-                for (var j = 0; j < secondDimentin; j++)
-                {
-                    vertices.Add(position + VoxelData.VoxelVertices[VoxelData.VoxelTriangles[i, j]]);
-                }
+                byte blockId = voxelMap[(int) pos.x, (int) pos.y, (int) pos.z];
 
-                byte blockId = voxelMap[position.x, position.y, position.z];
-                int textureId = world.blockTypes[blockId].GetTextureId(i);
-                
-                AddTexture(textureId);
-                AddTriangles();
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 0]]);
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 1]]);
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 2]]);
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 3]]);
+
+                AddTexture(world.blocktypes[blockId].GetTextureId(p));
+
+                triangles.Add(vertexIndex);
+                triangles.Add(vertexIndex + 1);
+                triangles.Add(vertexIndex + 2);
+                triangles.Add(vertexIndex + 2);
+                triangles.Add(vertexIndex + 1);
+                triangles.Add(vertexIndex + 3);
+                vertexIndex += 4;
             }
         }
     }
 
-    private void AddTriangles()
+    public void CreateMesh()
     {
-        triangles.Add(vertexIndex);
-        triangles.Add(vertexIndex + 1);
-        triangles.Add(vertexIndex + 2);
-        triangles.Add(vertexIndex + 2);
-        triangles.Add(vertexIndex + 1);
-        triangles.Add(vertexIndex + 3);
-        vertexIndex += 4;
-    }
-
-    private void CreateMesh()
-    {
-        var mesh = new Mesh
-        {
-            vertices = vertices.ToArray(), triangles = triangles.ToArray(), uv = uvs.ToArray()
-        };
+        var mesh = new Mesh();
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.uv = uvs.ToArray();
 
         mesh.RecalculateNormals();
 
@@ -160,10 +149,10 @@ public class Chunk
 
     private void AddTexture(int textureId)
     {
-        // ReSharper disable once PossibleLossOfFraction
-        float y = textureId / VoxelData.TextureAtlasSizeBlock;
-        float x = textureId % 4 * VoxelData.NormalizedBlockTextureSize;
+        float y = textureId / VoxelData.TextureAtlasSizeInBlocks;
+        float x = textureId - y * VoxelData.TextureAtlasSizeInBlocks;
 
+        x *= VoxelData.NormalizedBlockTextureSize;
         y *= VoxelData.NormalizedBlockTextureSize;
 
         y = 1f - y - VoxelData.NormalizedBlockTextureSize;

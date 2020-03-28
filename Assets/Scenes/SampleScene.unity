@@ -149,42 +149,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bd5fa649a24cbd44a112472175506a4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  blockTypes:
+  blocktypes:
+
   - blockName: Air
     isSolid: 0
     backFaceTexture: 0
-    bottomFaceTexture: 0
     frontFaceTexture: 0
+    topFaceTexture: 0
+    bottomFaceTexture: 0
     leftFaceTexture: 0
     rightFaceTexture: 0
-    topFaceTexture: 0
   - blockName: Bedrock
     isSolid: 1
     backFaceTexture: 9
-    bottomFaceTexture: 9
     frontFaceTexture: 9
+    topFaceTexture: 9
+    bottomFaceTexture: 9
     leftFaceTexture: 9
     rightFaceTexture: 9
-    topFaceTexture: 9
-  - blockName: Wood
+  - blockName: Stone
     isSolid: 1
-    backFaceTexture: 5
-    bottomFaceTexture: 6
-    frontFaceTexture: 5
-    leftFaceTexture: 5
-    rightFaceTexture: 5
-    topFaceTexture: 6
+    backFaceTexture: 0
+    frontFaceTexture: 0
+    topFaceTexture: 0
+    bottomFaceTexture: 0
+    leftFaceTexture: 0
+    rightFaceTexture: 0
   - blockName: Grass
     isSolid: 1
     backFaceTexture: 2
-    bottomFaceTexture: 1
     frontFaceTexture: 2
+    topFaceTexture: 7
+    bottomFaceTexture: 1
     leftFaceTexture: 2
     rightFaceTexture: 2
-    topFaceTexture: 7
+  - blockName: Furnace
+    isSolid: 1
+    backFaceTexture: 13
+    frontFaceTexture: 12
+    topFaceTexture: 15
+    bottomFaceTexture: 15
+    leftFaceTexture: 13
+    rightFaceTexture: 13
   material: {fileID: 2100000, guid: 3ec35a17c908c6745a58bdc7abd3dfa2, type: 2}
   player: {fileID: 963194228}
-  spawnPosition: {x: 0, y: 0, z: 0}
+  spawn: {x: 0, y: 0, z: 0}
 --- !u!4 &557769088
 Transform:
   m_ObjectHideFlags: 0
