@@ -1,63 +1,65 @@
 ﻿using System.Collections.Generic;
+using Models;
 using UnityEngine;
 
 public class Chunk
 {
     private readonly GameObject chunkObject;
-
-    public ChunkCoord coord;
     private readonly MeshFilter meshFilter;
 
     private readonly MeshRenderer meshRenderer;
     private readonly List<int> triangles = new List<int>();
     private readonly List<Vector2> uvs = new List<Vector2>();
-
-    private int vertexIndex;
     private readonly List<Vector3> vertices = new List<Vector3>();
 
     private readonly byte[,,] voxelMap = new byte[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkWidth];
 
     private readonly World world;
 
-    public Chunk(ChunkCoord _coord, World _world)
+    public ChunkCoordinate ChunkCoordinate;
+
+    private int vertexIndex;
+
+    public Chunk(ChunkCoordinate chunkCoordinate, World world)
     {
-        coord = _coord;
+        ChunkCoordinate = chunkCoordinate;
         chunkObject = new GameObject();
-        chunkObject.transform.position = new Vector3(coord.x * VoxelData.ChunkWidth, 0f, coord.z * VoxelData.ChunkWidth);
+        chunkObject.transform.position = new Vector3(
+            ChunkCoordinate.X * VoxelData.ChunkWidth,
+            0f,
+            ChunkCoordinate.Z * VoxelData.ChunkWidth);
 
         meshRenderer = chunkObject.AddComponent<MeshRenderer>();
         meshFilter = chunkObject.AddComponent<MeshFilter>();
-        world = _world;
+        this.world = world;
 
-        chunkObject.transform.SetParent(world.transform);
-        meshRenderer.material = world.material;
+        chunkObject.transform.SetParent(this.world.transform);
+        meshRenderer.material = this.world.material;
 
-        chunkObject.name = coord.x + ", " + coord.z;
+        chunkObject.name = $"{ChunkCoordinate.X}, {ChunkCoordinate.Z}";
 
         PopulateVoxelMap();
         CreateMeshData();
         CreateMesh();
     }
 
-    public bool isActive
+    public bool IsActive
     {
         get => chunkObject.activeSelf;
         set => chunkObject.SetActive(value);
     }
 
-    private Vector3 position => chunkObject.transform.position;
+    private Vector3 Position => chunkObject.transform.position;
 
-    private bool IsVoxelInChunk(int x, int y, int z)
+    private static bool IsVoxelInChunk(int x, int y, int z)
     {
-        if (x < 0 || x > VoxelData.ChunkWidth - 1 || y < 0 || y > VoxelData.ChunkHeight - 1 || z < 0 || z > VoxelData.ChunkWidth - 1)
-        {
-            return false;
-        }
-
-        return true;
+        return 
+            x >= 0 && x < VoxelData.ChunkWidth
+         && y >= 0 && y < VoxelData.ChunkHeight
+         && z >= 0 && z < VoxelData.ChunkWidth;
     }
 
-    public void PopulateVoxelMap()
+    private void PopulateVoxelMap()
     {
         for (var y = 0; y < VoxelData.ChunkHeight; y++)
         {
@@ -65,13 +67,13 @@ public class Chunk
             {
                 for (var z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    voxelMap[x, y, z] = world.GetVoxel(new Vector3(x, y, z) + position);
+                    voxelMap[x, y, z] = World.GetVoxelId(new Vector3(x, y, z) + Position);
                 }
             }
         }
     }
 
-    public void CreateMeshData()
+    private void CreateMeshData()
     {
         for (var y = 0; y < VoxelData.ChunkHeight; y++)
         {
@@ -87,7 +89,7 @@ public class Chunk
 
     public byte GetVoxelFromMap(Vector3 pos)
     {
-        pos -= position;
+        pos -= Position;
 
         return voxelMap[(int) pos.x, (int) pos.y, (int) pos.z];
     }
@@ -101,7 +103,7 @@ public class Chunk
         // If position is outside of this chunk...
         if (!IsVoxelInChunk(x, y, z))
         {
-            return world.blocktypes[world.GetVoxel(pos + position)].isSolid;
+            return world.blocktypes[World.GetVoxelId(pos + Position)].isSolid;
         }
 
         return world.blocktypes[voxelMap[x, y, z]].isSolid;
@@ -111,16 +113,16 @@ public class Chunk
     {
         for (var p = 0; p < 6; p++)
         {
-            if (!CheckVoxel(pos + VoxelData.faceChecks[p]))
+            if (!CheckVoxel(pos + VoxelData.FaceChecks[p]))
             {
-                byte blockID = voxelMap[(int) pos.x, (int) pos.y, (int) pos.z];
+                byte blockId = voxelMap[(int) pos.x, (int) pos.y, (int) pos.z];
 
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 0]]);
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 1]]);
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 2]]);
-                vertices.Add(pos + VoxelData.voxelVerts[VoxelData.voxelTris[p, 3]]);
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 0]]);
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 1]]);
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 2]]);
+                vertices.Add(pos + VoxelData.VoxelVerts[VoxelData.VoxelTris[p, 3]]);
 
-                AddTexture(world.blocktypes[blockID].GetTextureID(p));
+                AddTexture(world.blocktypes[blockId].GetTextureId(p));
 
                 triangles.Add(vertexIndex);
                 triangles.Add(vertexIndex + 1);
@@ -145,10 +147,10 @@ public class Chunk
         meshFilter.mesh = mesh;
     }
 
-    private void AddTexture(int textureID)
+    private void AddTexture(int textureId)
     {
-        float y = textureID / VoxelData.TextureAtlasSizeInBlocks;
-        float x = textureID - y * VoxelData.TextureAtlasSizeInBlocks;
+        float y = textureId / VoxelData.TextureAtlasSizeInBlocks;
+        float x = textureId - y * VoxelData.TextureAtlasSizeInBlocks;
 
         x *= VoxelData.NormalizedBlockTextureSize;
         y *= VoxelData.NormalizedBlockTextureSize;
