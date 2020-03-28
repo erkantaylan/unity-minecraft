@@ -150,6 +150,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockTypes:
+  - blockName: Air
+    isSolid: 0
+    backFaceTexture: 0
+    bottomFaceTexture: 0
+    frontFaceTexture: 0
+    leftFaceTexture: 0
+    rightFaceTexture: 0
+    topFaceTexture: 0
   - blockName: Bedrock
     isSolid: 1
     backFaceTexture: 9
@@ -176,6 +184,7 @@ MonoBehaviour:
     topFaceTexture: 7
   material: {fileID: 2100000, guid: 3ec35a17c908c6745a58bdc7abd3dfa2, type: 2}
   player: {fileID: 963194228}
+  spawnPosition: {x: 0, y: 0, z: 0}
 --- !u!4 &557769088
 Transform:
   m_ObjectHideFlags: 0
@@ -263,7 +272,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 9, y: 9, z: -10, w: 9}
+  m_BoundingSphereOverride: {x: 0.0390625, y: 0.1015625, z: 0.02734375, w: -0.03125}
   m_UseBoundingSphereOverride: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
