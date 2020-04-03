@@ -1,7 +1,14 @@
-﻿namespace Statics
+﻿using UnityEngine;
+
+namespace Statics
 {
-    public class Noise
+    public static class Noise
     {
-        
+        public static float Get2dPerlin(Vector2 position, float offset, float scale)
+        {
+            float x = position.x / VoxelData.ChunkWidth * scale + offset;
+            float y = position.y / VoxelData.ChunkWidth * scale + offset;
+            return Mathf.PerlinNoise(x, y);
+        }
     }
 }

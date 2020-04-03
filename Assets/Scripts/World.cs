@@ -1,22 +1,17 @@
 ﻿using System.Collections.Generic;
 using Models;
+using Statics;
 using UnityEngine;
 
 public class World : MonoBehaviour
 {
     private readonly List<ChunkCoordinate> activeChunks = new List<ChunkCoordinate>();
-
     private readonly Chunk[,] chunks = new Chunk[VoxelData.WorldSizeInChunks, VoxelData.WorldSizeInChunks];
-    public BlockType[] blocktypes;
-
-    public Material material;
-
-    public Transform player;
     private ChunkCoordinate playerLastChunkCoordinate;
-    public Vector3 spawn;
 
     private void Start()
     {
+        Random.InitState(seed);
         GenerateWorld();
         playerLastChunkCoordinate = GetChunkCoordinates(player.transform.position);
     }
@@ -128,25 +123,74 @@ public class World : MonoBehaviour
         activeChunks.Add(chunkCoordinate);
     }
 
-    public static byte GetVoxelId(Vector3 pos)
+    public static byte GetVoxelId(Vector3 position)
     {
-        if (pos.x < 0 || pos.x > VoxelData.WorldSizeInBlocks - 1
-         || pos.y < 0 || pos.y > VoxelData.ChunkHeight - 1
-         || pos.z < 0 || pos.z > VoxelData.WorldSizeInBlocks - 1)
+        int x = Mathf.FloorToInt(position.x);
+        int y = Mathf.FloorToInt(position.y);
+        int z = Mathf.FloorToInt(position.z);
+        
+        
+        if (!IsVoxelInWorld(position)) // outside world is always air
         {
             return 0;
         }
 
-        if (pos.y < 1)
+        if (y == 0) //first block is always bedrock
         {
             return 1;
         }
 
-        if (pos.y == VoxelData.ChunkHeight - 1)
+
+        int terrainHeight = Mathf.FloorToInt(VoxelData.ChunkHeight * Noise.Get2dPerlin(new Vector2(x, z), 500, 0.25f));
+
+        if (y < terrainHeight)
         {
-            return 3;
+            return 2;
         }
 
-        return 2;
+        if (y > terrainHeight)
+        {
+            return 0;
+        }
+        
+
+        return 3;
+
+        // if (position.y < 1)
+        // {
+        //     return 1;
+        // }
+        //
+        // if (y == VoxelData.ChunkHeight - 1)
+        // {
+        //     float tempNoise = Noise.Get2dPerlin(new Vector2(position.x, position.z), 0, 0.1f);
+        //     
+        //     if (tempNoise < 0.5f)
+        //     {
+        //         return 3;
+        //     }
+        //
+        //     return 4;
+        // }
+        //
+        // return 2;
     }
+
+    private static bool IsVoxelInWorld(Vector3 position)
+    {
+        return
+            position.x >= 0 && position.x < VoxelData.WorldSizeInBlocks
+         && position.y >= 0 && position.y < VoxelData.ChunkHeight
+         && position.z >= 0 && position.z < VoxelData.WorldSizeInBlocks;
+    }
+
+    #region Public Properties
+
+    public BlockType[] blocktypes;
+    public Material material;
+    public Transform player;
+    public Vector3 spawn;
+    public int seed;
+
+    #endregion
 }

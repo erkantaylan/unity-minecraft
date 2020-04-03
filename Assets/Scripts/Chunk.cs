@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Models;
+using Statics;
 using UnityEngine;
 
 public class Chunk
@@ -53,7 +54,7 @@ public class Chunk
 
     private static bool IsVoxelInChunk(int x, int y, int z)
     {
-        return 
+        return
             x >= 0 && x < VoxelData.ChunkWidth
          && y >= 0 && y < VoxelData.ChunkHeight
          && z >= 0 && z < VoxelData.ChunkWidth;
@@ -81,7 +82,10 @@ public class Chunk
             {
                 for (var z = 0; z < VoxelData.ChunkWidth; z++)
                 {
-                    AddVoxelDataToChunk(new Vector3(x, y, z));
+                    if (world.blocktypes[voxelMap[x, y, z]].isSolid)
+                    {
+                        AddVoxelDataToChunk(new Vector3(x, y, z));
+                    }
                 }
             }
         }
